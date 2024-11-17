@@ -1,0 +1,76 @@
+uses only the 26 uppercase letters of the latin alphabet and digits zero-nine
+    we may also need parentheses
+all other characters are ignored
+    lowercase letters make convenient comments
+
+vm consists of an infinite list (starts full of nulls) (+ a main method)
+slots can contain functions, classes, objects, and other programs
+    basically everything has the same representation, infinite list + main
+    it's bools at the most basic level
+        even ints are conceptually just lists of bools
+        strings are lists of lists of bools, of course
+
+tokens:
+    Access
+    Borrow (import)
+    Class
+    During (while)
+    End
+    Function
+    Gets (assignment)
+catcH
+    If
+    Jump (to token)
+breaK
+    Length (number of highest assigned variable)
+    Main (also constructor)
+    Not (also else)
+ thrOw
+  rePeat (continue)
+   eQual
+    Read
+    Self (this)
+    Then
+    Unless (XOR)
+  inVoke (call)
+    Write
+   eXpect (exception)
+    Yield (return)
+    Zero (null)
+
+organized into conceptual categories:
+  Access,
+  Gets,
+  
+  Borrow,
+  
+  Class,
+  Function,
+  
+  During,
+  Repeat,
+  Break,
+  If,
+  Not,
+  Then,
+  End,
+  
+  Throw,
+  Expect,
+  Catch,
+  
+  Jump,
+  Yield,
+  
+  Length,
+  Self,
+  Zero
+  
+  Main,
+  Invoke,
+  
+  Equals,
+  Unless,
+   
+  Read,
+  Write,
