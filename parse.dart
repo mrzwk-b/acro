@@ -1,8 +1,7 @@
 Set legalCharacters = {
   'A','B','C','D','E','F','G','H','I','J','K','L','M',
   'N','O','P','Q','R','S','T','U','V','W','X','Y','Z',
-  '0','1','2','3','4','5','6','7','8','9',
-  // '(',')',
+  '0','1','2','3','4','5','6','7','8','9','(',')',
 };
 
 enum NodeType {
@@ -89,6 +88,9 @@ class Parser {
     Node expression;
     if (text[0] == "A") {
       expression = Node(NodeType.Access);
+    }
+    else if (text[0] == "G") {
+      expression = Node(NodeType.Gets);
     }
     else if (text[0] == "Q") {
       expression = Node(NodeType.Equal);
@@ -201,9 +203,10 @@ class Parser {
   }
 
   Node parseGets() {
-    Node gets = Node(NodeType.Gets);
-    // TODO
-    return gets;
+    Node leftOperand = parseExpression();
+
+    trim();
+    return parseBinaryOperation(leftOperand);
   }
 
   /// parses a statement of any [type] from head of [text]
@@ -251,26 +254,40 @@ class Parser {
       statement = Node(NodeType.Zero);
     }
     else if (text[0] == 'X') {
-      statement = Node(NodeType.Expect); // TODO
+      statement = Node(NodeType.Expect);
+      text = text.substring(1);
+      
+      trim();
+      statement.children = parseBlock(terminator: 'H');
+
+      trim();
+      statement.condition = parseExpression();
+      
+      trim();
+      assert(text.startsWith('T'), "Expected 'T' to start 'H' block, found '${text[0]}'");
+      text = text.substring(1);
+
+      trim();
+      statement.altChildren = parseBlock();
     }
     // with argument
     else if (text[0] == 'J') {
-      statement = Node(NodeType.Jump); // TODO
+      statement = parseUnaryOperation(NodeType.Jump);
     }
     else if (text[0] == 'O') {
-      statement = Node(NodeType.Throw); // TODO
+      statement = parseUnaryOperation(NodeType.Throw);
     }
     else if (text[0] == 'V') {
-      statement = Node(NodeType.Invoke); // TODO
+      statement = parseUnaryOperation(NodeType.Invoke);
     }
     else if (text[0] == 'W') {
-      statement = Node(NodeType.Write); // TODO
+      statement = parseUnaryOperation(NodeType.Write);
     }
     else if (text[0] == 'Y') {
-      statement = Node(NodeType.Yield); // TODO
+      statement = parseUnaryOperation(NodeType.Yield);
     }
     else {
-      statement = Node(NodeType.Gets); // TODO
+      statement = parseGets();
     }
     return statement;
   }
@@ -280,7 +297,7 @@ class Parser {
   /// 
   /// returns a list of [Node]s in the block
   ///
-  /// advances head of [text] past block's 'E' token
+  /// advances head of [text] past [terminator]
   List<Node> parseBlock({bool getsOnly = false, String terminator = 'E'}) {
     List<Node> block = [];
     
