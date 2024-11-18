@@ -10,7 +10,7 @@ document: [gets]* ;
                 borrow: "B" expression ;
             function: "F" [statement]* "E" ;
                 statement: (during, gets, if, "T", expect, ("J", "O", "V", "W", "Y") expression) ;
-                    during: "D" expression "T" {[statement]* ["K"] ["P"]}*"E" ;
+                    during: "D" expression "T" {[statement]* ["K"] ["P"]}* "E" ;
                     if: "I" expression "T" [statement]* "E" ["NT" [statement]* "E"] ;
                     expect: "X" [statement]* "H expression [statement]*";
             nullop: ("L", "R", "S", "Z") ;

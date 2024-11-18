@@ -138,7 +138,7 @@ class Parser {
       text = text.substring(1);
       
       trim();
-      if (text[0] == 'B') {        
+      if (text[0] == 'B') {
         expression.altChildren = [parseUnaryOperation(NodeType.Borrow)];
 
         trim();
