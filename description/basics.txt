@@ -10,6 +10,40 @@ slots can contain functions, classes, objects, and other programs
         even ints are conceptually just lists of bools
         strings are lists of lists of bools, of course
 
+access/gets
+    "G" requires an access expression as its left operand
+    what you're essentially saying is that
+        whenever you use the left operand in another expression,
+        it'll evaluate to the result of whatever expression you pass as the right operand of "G"
+    if we didn't require an access expression we'd be implying weird behavior like keyword redefinition
+
+main/invoke/functions
+    all objects have a main in addition to their numbered fields
+    an object's main can be accessed with "_AM", including for assignment
+        if an object has no main assigned, its main will evaluate to zilch
+    all objects can be invoked with "V_", invoking their main
+        "V_" is equivalent to "V_AM"
+    functions are special, invoking one will run it and evaluate to what it yields
+        their actual code is conceptually stored in main
+        their numbered fields can be used to pass arguments to be accessed via "S"
+    classes are also special, invoking one will construct an instance of it
+        first the class is copied as a new object
+        then the object's main is invoked, if one exists
+            before it can run but after it's been read for invocation,
+            it's set to zilch to keep the constructor contained to the class
+
+self
+    "S" is a meaningful keyword in 3 contexts, inside a
+        function
+            refers to the function object, which can be used to hold arguments
+        class
+            refers to instances of the class, contrasts with the class' static existence
+        catch block
+            refers to the error being caught, which can in principle be any object
+
+    if these constructs are nested, use "SAS" to go one level up
+        "(SAS)AS" for two levels up, and so on
+
 tokens:
     Access
     Borrow (import)
@@ -36,7 +70,7 @@ breaK
     Write
    eXpect (exception)
     Yield (return)
-    Zero (null)
+    Zilch (null)
 
 organized into conceptual categories:
   Access,
@@ -64,7 +98,7 @@ organized into conceptual categories:
   
   Length,
   Self,
-  Zero
+  Zilch
   
   Main,
   Invoke,

@@ -1,56 +1,10 @@
-Set legalCharacters = {
+import 'node.dart';
+
+Set<String> legalCharacters = {
   'A','B','C','D','E','F','G','H','I','J','K','L','M',
   'N','O','P','Q','R','S','T','U','V','W','X','Y','Z',
   '0','1','2','3','4','5','6','7','8','9','(',')',
 };
-
-enum NodeType {
-  Program,
-  Number,
-  Error,
-
-  Access,
-  Borrow,
-  Class,
-  During,
-  // End,
-  Function,
-  Gets,
-  // Catch,
-  If,
-  Jump,
-  Break,
-  Length,
-  Main,
-  Not,
-  Throw,
-  Repeat,
-  Equal,
-  Read,
-  Self,
-  // Then,
-  Unless,
-  Invoke,
-  Write,
-  Expect,
-  Yield,
-  Zero
-}
-
-class Node {
-  NodeType type;
-  List<Node>? children;
-  Node? condition;
-  List<Node>? altChildren;
-  int? value;
-
-  Node(this.type) {
-    children = {
-      NodeType.Length, NodeType.Read, NodeType.Self, NodeType.Zero, NodeType.Number
-    }.contains(type) ? null : [];
-    altChildren = {NodeType.If, NodeType.Expect}.contains(type) ? [] : null;
-  }
-}
 
 class Parser {
   String text;
@@ -59,61 +13,18 @@ class Parser {
 
   /// deletes all nonfunctional characters from the front of [text]
   void trim() {
-    while (!legalCharacters.contains(text[0])) {
+    while (text.length > 0 && !legalCharacters.contains(text[0])) {
       text = text.substring(1);
     }
   }
 
- 
   // parsing methods
-
-  /// returns a Node of [type] with a parsed expression from head of [text] in [children]
-  /// 
-  /// advances head of [text] past operand
-  Node parseUnaryOperation(NodeType type) {
-    Node operation = Node(type);
-
-    text = text.substring(1);
-    trim();
-
-    operation.children!.add(parseExpression());
-    return operation;
-  }
-
-  /// with [type] and [rightOperand] from head of [text]:
-  /// - returns a Node of [type] with [rightOperand] and [leftOperand] in [children]
-  /// 
-  /// advances head of [text] past operand
-  Node parseBinaryOperation(Node leftOperand) {
-    Node expression;
-    if (text[0] == "A") {
-      expression = Node(NodeType.Access);
-    }
-    else if (text[0] == "G") {
-      expression = Node(NodeType.Gets);
-    }
-    else if (text[0] == "Q") {
-      expression = Node(NodeType.Equal);
-    }
-    else if (text[0] == "U") {
-      expression = Node(NodeType.Unless);
-    }
-    else {
-      assert(false, "Expected binary operator, found '${text[0]}'");
-      expression = Node(NodeType.Error);
-    }
-    text = text.substring(1);
-    trim();
-
-    expression.children!.addAll([parseExpression(), leftOperand]);
-    return expression;
-  }
 
   /// parses an expression of any [type] from head of [text]
   /// 
   /// advances head of [text] to after expression
-  Node parseExpression() {
-    Node expression;
+  Expression parseExpression() {
+    Expression expression;
     bool parenthesized = text[0] == '(';
     if (parenthesized) {
       text = text.substring(1);
@@ -122,24 +33,23 @@ class Parser {
 
     // numbers
     if (int.tryParse(text[0]) != null) {
-      expression = Node(NodeType.Number);
       String value = '';
-      while (int.tryParse(text[0]) != null) {
+      while (text != '' && int.tryParse(text[0]) != null) {
         value += text[0];
         text = text.substring(1);
         trim();
       }
-      expression.value = int.parse(value);
+      expression = Number(int.parse(value));
     }
 
     // special constructs
     else if (text[0] == 'C') {
-      expression = Node(NodeType.Class);
       text = text.substring(1);
       
       trim();
+      Borrow? borrow;
       if (text[0] == 'B') {
-        expression.altChildren = [parseUnaryOperation(NodeType.Borrow)];
+        borrow = Borrow(parseExpression());
 
         trim();
         assert(text[0] == "T", "Expected 'T' to close 'B', found '${text[0]}'");
@@ -147,144 +57,199 @@ class Parser {
       }
 
       trim();
-      expression.children = parseBlock(getsOnly: true);
+      expression = Class(parseBlock(), borrow);
     }
     else if (text[0] == 'F') {
       text = text.substring(1);
-      expression = Node(NodeType.Function);
-      expression.children = parseBlock();
+      trim();
+      expression = Func(parseBlock());
     }
 
     // nullary operations
     else if (text[0] == 'L') {
-      expression = Node(NodeType.Length);
       text = text.substring(1);
+      expression = Length();
     }
     else if (text[0] == 'R') {
-      expression = Node(NodeType.Read);
       text = text.substring(1);
+      expression = Read();
     }
     else if (text[0] == 'S') {
-      expression = Node(NodeType.Self);
       text = text.substring(1);
+      expression = Self();
     }
     else if (text[0] == 'Z') {
-      expression = Node(NodeType.Zero);
       text = text.substring(1);
+      expression = Zilch();
     }
 
     // unary operations
-    else if (text[0] == 'B') {
-      expression = parseUnaryOperation(NodeType.Borrow);
-    }
     else if (text[0] == 'A') {
-      expression = parseUnaryOperation(NodeType.Access);
+      text = text.substring(1);
+      trim();
+      expression = Access(parseExpression());
+    }
+    else if (text[0] == 'B') {
+      text = text.substring(1);
+      trim();
+      expression = Borrow(parseExpression());
     }
     else if (text[0] == 'N') {
-      expression = parseUnaryOperation(NodeType.Not);
+      text = text.substring(1);
+      trim();
+      expression = Not(parseExpression());
     }
     else if (text[0] == 'V') {
-      expression = parseUnaryOperation(NodeType.Invoke);
+      text = text.substring(1);
+      trim();
+      expression = Invoke(parseExpression());
+    }
+    else {
+      assert(false, "Expected valid expression starter, found ${text[0]}");
+      expression = Error();
     }
 
     // binary operations
-    else {
-      Node leftOperand = parseExpression();
-      trim();
-      expression = parseBinaryOperation(leftOperand);
+    trim();
+    if ({'A','B','Q','U'}.contains(text.length == 0 ? '' : text[0])) {
+      if (text[0] == "A") {
+        text = text.substring(1);
+        trim();
+        expression = Access(expression, parseExpression());
+      }
+      else if (text[0] == "B") {
+        text = text.substring(1);
+        trim();
+        expression = Borrow(expression, parseExpression());
+      }
+      else if (text[0] == "Q") {
+        text = text.substring(1);
+        trim();
+        expression = Equal(expression, parseExpression());
+      }
+      else if (text[0] == "U") {
+        text = text.substring(1);
+        trim();
+        expression = Unless(expression, parseExpression());
+      }
+      else {
+        assert(false, "Expected binary operator, found '${text[0]}'");
+        expression = Error();
+      }
     }
 
     trim();
     if (parenthesized) {
-      assert(text[0] == ')', "Expected closing paren, found '${text[0]}'");
-      text = text.substring(1);
+      if (text.startsWith(')')) {
+        text = text.substring(1);
+        return expression;
+      }
+      else {
+        assert(false, "Expected closing paren, found '${text[0]}'");
+      }
     }
     return expression;
   }
 
-  Node parseGets() {
-    Node leftOperand = parseExpression();
+  Gets parseGets() {
+    Expression leftChild = parseExpression();
+    assert(leftChild is Access, "Expected access expression, found ${leftChild.runtimeType}");
 
     trim();
-    return parseBinaryOperation(leftOperand);
+    assert(text.startsWith('G'), "Expected 'G', found ${text[0]}");
+    text = text.substring(1);
+
+    trim();
+    return Gets(leftChild as Access, parseExpression());
   }
 
   /// parses a statement of any [type] from head of [text]
   /// 
   /// advances head of [text] to after statement
-  Node parseStatement() {
-    Node statement;
-    // no argument
+  Statement? parseStatement() {
+    Statement? statement;
+    // conditional
     if (text[0] == 'D') {
-      statement = Node(NodeType.During);
       text = text.substring(1);
 
       trim();
-      statement.condition = parseExpression();
+      Expression condition = parseExpression();
 
       trim();
       assert(text.startsWith('T'), "Expected 'T' after condition of 'D', found '${text[0]}'");
       text = text.substring(1);
 
       trim();
-      statement.children = parseBlock();
+      List<Statement> children = parseBlock();
+
+      statement = During(condition, children);
     }
     else if (text[0] == 'I') {
-      statement = Node(NodeType.If);
       text = text.substring(1);
 
       trim();
-      statement.condition = parseExpression();
+      Expression condition = parseExpression();
 
       trim();
       assert(text.startsWith('T'), "Expected 'T' after condition of 'I', found '${text[0]}'");
       text = text.substring(1);
 
       trim();
-      statement.children = parseBlock();
+      List<Statement> children = parseBlock();
 
       trim();
-      if (text.startsWith('NT')) {
-        text = text.substring(2);
-        statement.altChildren = parseBlock();
+      List<Statement>? elseChildren;
+      if (text.startsWith('N')) {
+        text = text.substring(1);
+        
+        trim();
+        if (text.startsWith('T')) {
+          elseChildren = parseBlock();
+        }
+        else {
+          text = 'N' + text;
+        }
       }
-    }
-    else if (text[0] == 'T') {
-      text = text.substring(1);
-      statement = Node(NodeType.Zero);
+      statement = If(condition, children, elseChildren);
     }
     else if (text[0] == 'X') {
-      statement = Node(NodeType.Expect);
       text = text.substring(1);
       
       trim();
-      statement.children = parseBlock(terminator: 'H');
+      List<Statement> tryChildren = parseBlock(terminator: 'H');
 
       trim();
-      statement.condition = parseExpression();
-      
-      trim();
-      assert(text.startsWith('T'), "Expected 'T' to start 'H' block, found '${text[0]}'");
-      text = text.substring(1);
+      List<Statement> catchChildren = parseBlock();
 
-      trim();
-      statement.altChildren = parseBlock();
+      statement = Expect(tryChildren, catchChildren);
     }
-    // with argument
+    // simple
+    else if (text[0] == 'T') {
+      text = text.substring(1);
+    }
     else if (text[0] == 'J') {
-      statement = parseUnaryOperation(NodeType.Jump);
+      text = text.substring(1);
+      statement = Jump();
     }
+    else if (text[0] == 'K') {
+      text = text.substring(1);
+      statement = Break();
+    }
+    // parameterized
     else if (text[0] == 'O') {
-      statement = parseUnaryOperation(NodeType.Throw);
-    }
-    else if (text[0] == 'V') {
-      statement = parseUnaryOperation(NodeType.Invoke);
+      text = text.substring(1);
+      trim(); 
+      statement = Throw(parseExpression());
     }
     else if (text[0] == 'W') {
-      statement = parseUnaryOperation(NodeType.Write);
+      text = text.substring(1);
+      trim(); 
+      statement = Write(parseExpression());
     }
     else if (text[0] == 'Y') {
-      statement = parseUnaryOperation(NodeType.Yield);
+      text = text.substring(1);
+      trim(); 
+      statement = Yield(parseExpression());
     }
     else {
       statement = parseGets();
@@ -298,11 +263,14 @@ class Parser {
   /// returns a list of [Node]s in the block
   ///
   /// advances head of [text] past [terminator]
-  List<Node> parseBlock({bool getsOnly = false, String terminator = 'E'}) {
-    List<Node> block = [];
+  List<Statement> parseBlock({bool getsOnly = false, String terminator = 'E'}) {
+    List<Statement> block = [];
     
     while (text[0] != terminator){
-      block.add(getsOnly ? parseGets() : parseStatement());
+      Statement? statement = getsOnly ? parseGets() : parseStatement();
+      if (statement != null) {
+        block.add(statement);
+      }
       trim();
     }
     text = text.substring(1);
@@ -310,14 +278,5 @@ class Parser {
     return block;
   }
 
-  Node parseProgram() {
-    Node program = Node(NodeType.Program);
-
-    while (text.length != 0) {
-      trim();
-      program.children!.add(parseGets());
-    }
-
-    return program;
-  }
+  Program parseProgram() => Program(parseBlock());
 }

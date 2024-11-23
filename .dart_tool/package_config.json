@@ -302,10 +302,10 @@
       "languageVersion": "3.5"
     }
   ],
-  "generated": "2024-11-18T20:24:23.921917Z",
+  "generated": "2024-11-19T22:15:34.073920Z",
   "generator": "pub",
-  "generatorVersion": "3.5.4",
+  "generatorVersion": "3.5.3",
   "flutterRoot": "file:///C:/Users/bmerk/flutter",
-  "flutterVersion": "3.24.4",
+  "flutterVersion": "3.24.3",
   "pubCache": "file:///C:/Users/bmerk/AppData/Local/Pub/Cache"
 }

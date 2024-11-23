@@ -2,17 +2,18 @@ metasyntax:
     element: [optional] {unordered, elements} (required, choice) repeated* "literal";*
 ;
 
-document: [gets]* ;
-    gets: expression "G" expression ;
-        expression: (number, class, function, nullop, unop, binop) ;
+document: [statement]* ;
+    gets: ('M', access) "G" expression ;
+        access: [expression] 'A' expression
+        expression: (number, access, class, function, nullop, unop, binop) ;
             number: (0, 1, 2, 3, 4, 5, 6, 7, 8, 9)* ;
             class: "C" [borrow "T"] [gets]* "E" ;
                 borrow: "B" expression ;
             function: "F" [statement]* "E" ;
-                statement: (during, gets, if, "T", expect, ("J", "O", "V", "W", "Y") expression) ;
+                statement: (during, gets, if, "J", "T", expect, ("O", "W", "Y") expression) ;
                     during: "D" expression "T" {[statement]* ["K"] ["P"]}* "E" ;
                     if: "I" expression "T" [statement]* "E" ["NT" [statement]* "E"] ;
-                    expect: "X" [statement]* "H expression [statement]*";
+                    expect: "X" [statement]* "H [statement]* E";
             nullop: ("L", "R", "S", "Z") ;
-            unop: ("A", "B", "N", "V") expression ;
-            binop: expression ("A", "Q", "U") expression ;
+            unop: ("B", "N", "V") expression ;
+            binop: expression ("Q", "U") expression ;
