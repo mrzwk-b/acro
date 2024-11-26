@@ -5,60 +5,71 @@
 
 // void main() {
 //   group("parseExpression()", () {
-//     test(' fails on the empty string', () {
+//     test('empty string', () {
 //       Parser parser = Parser('');
-
-//       expect(
-//         () => parser.parseExpression(), 
-//         throwsRangeError
-//       );
+//       expect(() => parser.parseExpression(), throwsRangeError);
 //     });
-    
-//     // unary operations
-//     test(' fails when text[0] is followed by an invalid expression', () {
-//       Parser parser = Parser('BW');
-
-//       expect(
-//         () => parser.parseExpression(),
-//         throwsA(isA<AssertionError>())
-//       );
+//     test('invalid expression', () {
+//       Parser parser = Parser('WZ');
+//       expect(() => parser.parseExpression(), throwsA(isA<AssertionError>()));
 //     });
-//     test(' passes when text[0] is followed by a simple expression', () {
-//       Parser parser = Parser('VZ');
-      
-//       Expression result = parser.parseExpression();
-//       Expression expected = Invoke(Zilch());
-
-//       expect(result, expected);
-//       expect(parser.text, '');
+//     test("nullary expression", () {
+//       Parser parser = Parser('L');
+//       expect(parser.parseExpression(), Length());
+//       parser = Parser('R');
+//       expect(parser.parseExpression(), Read());
+//       parser = Parser('S');
+//       expect(parser.parseExpression(), Self());
+//       parser = Parser('Z');
+//       expect(parser.parseExpression(), Zilch());
+//       parser = Parser('365');
+//       expect(parser.parseExpression(), Number(365));
 //     });
-//     test(' passes when text[0] is followed by a complex expression', () {
-//       Parser parser = Parser('N1Q0');
-      
-//       Expression result = parser.parseExpression();
-//       Expression expected = Not(Equal(Number(1), Number(0)));
+//     test('unary expression', () {
+//       Parser parser = Parser('AZ');
+//       expect(parser.parseExpression(), Access(Zilch()));
+//       parser = Parser('BZ');
+//       expect(parser.parseExpression(), Borrow(Zilch()));
+//       parser = Parser('NZ');
+//       expect(parser.parseExpression(), Not(Zilch()));
+//       parser = Parser('VZ');
+//       expect(parser.parseExpression(), Invoke(Zilch()));
 
-//       expect(result, expected);
-//       expect(parser.text, '');
+//       // nested
+//       parser = Parser('ABNVZ');
+//       expect(parser.parseExpression(), Access(Borrow(Not(Invoke(Zilch())))));
 //     });
-//     test(' parses no more than the unary operation in front', () {
+//     test("binary expression", () {
+//       Parser parser = Parser("LAR");
+//       expect(parser.parseExpression(), Access(Length(), Read()));
+//       parser = Parser("LBR");
+//       expect(parser.parseExpression(), Borrow(Length(), Read()));
+//       parser = Parser("LQR");
+//       expect(parser.parseExpression(), Equal(Length(), Read()));
+//       parser = Parser("LUR");
+//       expect(parser.parseExpression(), Unless(Length(), Read()));
+//     });
+//     test("unparenthesized", () {
+//       Parser parser = Parser("N1Q0");
+//       expect(parser.parseExpression(), Not(Equal(Number(1), Number(0))));
+//       parser = Parser("LQ0UR");
+//       expect(parser.parseExpression(), Equal(Length(), Unless(Number(0), Read())));
+//     });
+//     test("parentheses", () {
+//       Parser parser = Parser("(N1)Q0");
+//       expect(parser.parseExpression(), Equal(Not(Number(1)), Number(0)));
+//       parser = Parser("(LQ0)UR");
+//       expect(parser.parseExpression(), Unless(Equal(Length(), Number(0)), Read()));
+//     });
+//     test("nonfunctional characters", () {
+//       Parser parser = Parser("(?LoremQips0m)dolU_R sit");
+//       expect(parser.parseExpression(), Unless(Equal(Length(), Number(0)), Read()));
+//     });
+//     test('effect on [text]', () {
 //       Parser parser = Parser('AZT');
-
-//       Expression result = parser.parseExpression();
-//       Expression expected = Access.unary(Zilch());
-
-//       expect(result, expected);
+//       expect(parser.parseExpression(), Access(Zilch()));
 //       expect(parser.text, 'T');
 //     });
-//   });
-//   group("parseBinaryOperation()", () {
-//     // removed
-//   });
-//   group("parseAccess()", () {
-//     // removed
-//   });
-//   group("parseExpression()", () {
-//     // TODO
 //   });
 //   group("parseGets()", () {
 //     // TODO
