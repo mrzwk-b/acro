@@ -47,7 +47,7 @@ self
 tokens:
     Access
     Borrow (import)
-    Class
+    Class (TODO replace with Copy)
     During (while)
     End
     Function
@@ -55,12 +55,12 @@ tokens:
 catcH
     If
     Jump (to token)
-breaK
+ linK (create lists)
     Length (number of highest assigned variable)
-    Main (also constructor)
+    Main
     Not (also else)
  thrOw
-  rePeat (continue)
+    Place (creates breakpoints for Jump)
    eQual
     Read
     Self (this)
