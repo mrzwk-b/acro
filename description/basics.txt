@@ -1,48 +1,53 @@
 uses only the 26 uppercase letters of the latin alphabet and digits zero-nine
-    we may also need parentheses
+    we may also need parentheses (for expression boundary disambiuation)
+    and hyphens (for integer negation)
 all other characters are ignored
     lowercase letters make convenient comments
 
-vm consists of an infinite list (starts full of nulls) (+ a main method)
-slots can contain functions, classes, objects, and other programs
-    basically everything has the same representation, infinite list + main
-    it's bools at the most basic level
-        even ints are conceptually just lists of bools
-        strings are lists of lists of bools, of course
+vm consists of an infinite list (starts full of nulls) (+ a main)
+slots contain objects which are themselves infinite lists of either bools or more objects (+ a main)
+    even ints are conceptually just lists of bools
+    strings are lists of ints
 
-access/gets
-    "G" requires an access expression as its left operand
-    what you're essentially saying is that
+gets
+    a Gets expression ensures that
         whenever you use the left operand in another expression,
-        it'll evaluate to the result of whatever expression you pass as the right operand of "G"
-    if we didn't require an access expression we'd be implying weird behavior like keyword redefinition
+        it'll evaluate to the result of whatever expression you pass as the right operand
+    typically used with Access
+    can be used with a Length expression to slice the end off a list
+    can also be used with Read to write
+
+read
+    reads from a source based on the object passed as an arguments
+        writes to destination if used as left operand of Gets
+    "RS" defines character encoding
+    "RM" references the program being run (maybe? we'll see)
 
 main/invoke/functions
-    all objects have a main in addition to their numbered fields
-    an object's main can be accessed with "_AM", including for assignment
-        if an object has no main assigned, its main will evaluate to zilch
-    all objects can be invoked with "V_", invoking their main
-        "V_" is equivalent to "V_AM"
-    functions are special, invoking one will run it and evaluate to what it yields
-        their actual code is conceptually stored in main
-        their numbered fields can be used to pass arguments to be accessed via "S"
-    classes are also special, invoking one will construct an instance of it
-        first the class is copied as a new object
-        then the object's main is invoked, if one exists
-            before it can run but after it's been read for invocation,
-            it's set to zilch to keep the constructor contained to the class
+    when an object is invoked, its main is evaluated and returned
+    "F" syntax creates a function object, where the executable code is stored in the object's main
+        the object's list can be used to hold parameters, accessible via "S" inside the "F" block
+    a main can be reassigned with "_AM G_"
+        non-executable mains simply evaluate to the value stored in them
 
 self
-    "S" is a meaningful keyword in 3 contexts, inside a
+    "S" is a meaningful keyword in 2 contexts, inside a
         function
-            refers to the function object, which can be used to hold arguments
-        class
-            refers to instances of the class, contrasts with the class' static existence
+            refers to the object the function belongs to,
+            whose lists holds arguments and whose main is the function itself (enabling recursion)
         catch block
             refers to the error being caught, which can in principle be any object
 
     if these constructs are nested, use "SAS" to go one level up
         "(SAS)AS" for two levels up, and so on
+
+jump/place
+    useful for flow control
+    "P" creates a reference point to jump to, no side effects
+    "J_" moves to the reference point that many instances away, i.e.,
+        "P J-1" creates an infinite loop
+        "J2 D1TPE P" skips the infinite loop
+        "P J0 P" does nothing
 
 tokens:
     Access
@@ -67,44 +72,7 @@ catcH
     Then
     Unless (XOR)
   inVoke (call)
-    Write
+   aWait
    eXpect (exception)
     Yield (return)
     Zilch (null)
-
-organized into conceptual categories:
-  Access,
-  Gets,
-  
-  Borrow,
-  
-  Class,
-  Function,
-  
-  During,
-  Repeat,
-  Break,
-  If,
-  Not,
-  Then,
-  End,
-  
-  Throw,
-  Expect,
-  Catch,
-  
-  Jump,
-  Yield,
-  
-  Length,
-  Self,
-  Zilch
-  
-  Main,
-  Invoke,
-  
-  Equals,
-  Unless,
-   
-  Read,
-  Write,

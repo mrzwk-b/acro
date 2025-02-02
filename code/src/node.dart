@@ -1,12 +1,33 @@
 abstract class Node {
+  /// position of a node's token out of all tokens, starting at 1,
+  /// regardless of if other tokens form their own nodes 
+  /// or if they have length greater than 1
+  /// 
+  /// for example, the code "D 10 T P E" contains the following tokens at the following positions:
+  /// 
+  /// 1: D
+  /// 
+  /// 2: 10
+  /// 
+  /// 3: T
+  /// 
+  /// 4: P
+  /// 
+  /// 5: E
+  /// 
+  /// position 0 is reserved for the root [Program] node
   int position;
   Node(this.position);
+  @override bool operator ==(Object other) =>
+    runtimeType == other.runtimeType &&
+    position == (other as Node).position
+  ;
 }
 
 Map<Type, String> nodeTokens = {
   Access: 'A',
   Borrow: 'B',
-  Class: 'C',
+  Copy: 'C',
   During: 'D',
   // End: 'E',
   Func: 'F',
@@ -26,7 +47,7 @@ Map<Type, String> nodeTokens = {
   // Then: 'T',
   Unless: 'U',
   Invoke: 'V',
-  Write: 'W',
+  Await: 'W',
   Expect: 'X',
   Yield: 'Y',
   Zilch: 'Z',
@@ -53,50 +74,46 @@ abstract class NullaryExpression extends Expression {
   NullaryExpression(super.position);
   @override String toString() => nodeTokens[runtimeType]!;
 }
-class Length extends NullaryExpression {
-  Length(super.position);
-  @override bool operator ==(Object other) => other is Length;
-}
 class Main extends NullaryExpression {
   Main(super.position);
-  @override bool operator ==(Object other) => other is Main;
-}
-class Place extends NullaryExpression {
-  Place(super.position);
-  @override bool operator ==(Object other) => other is Place;
-}
-class Read extends NullaryExpression {
-  Read(super.position);
-  @override bool operator ==(Object other) => other is Read;
 }
 class Self extends NullaryExpression {
   Self(super.position);
-  @override bool operator ==(Object other) => other is Self;
 }
 class Zilch extends NullaryExpression {
   Zilch(super.position);
-  @override bool operator ==(Object other) => other is Zilch;
 }
 class Number extends NullaryExpression {
   int value;
-  Number(super.position, this.value);
+  Number(super.position, {required this.value});
   @override String toString() => value.toString();
-  @override bool operator ==(Object other) => other is Number && this.value == other.value;
+  @override bool operator ==(Object other) =>
+    super == other && value == (other as Number).value
+  ;
 }
 
 abstract class UnaryExpression extends Expression {
   Expression child;
   UnaryExpression(super.position, this.child);
   @override String toString() => "(${nodeTokens[runtimeType]} $child)";
-  @override bool operator ==(Object other) => other is UnaryExpression && this.child == other.child;
+  @override bool operator ==(Object other) =>
+    super == other && this.child == (other as UnaryExpression).child
+  ;
+}
+class Copy extends UnaryExpression {
+  Copy(super.position, super.child);
+}
+class Length extends UnaryExpression {
+  Length(super.position, super.child);
 }
 class Not extends UnaryExpression {
   Not(super.position, super.child);
-  @override bool operator ==(Object other) => (super == other) && other is Not;
+}
+class Read extends UnaryExpression {
+  Read(super.position, super.child);
 }
 class Invoke extends UnaryExpression {
   Invoke(super.position, super.child);
-  @override bool operator ==(Object other) => (super == other) && other is Invoke;
 }
 
 abstract class BinaryExpression extends Expression {
@@ -105,19 +122,18 @@ abstract class BinaryExpression extends Expression {
   BinaryExpression(super.position, this.leftOperand, this.rightOperand);
 
   @override bool operator ==(Object other) => 
-    other is BinaryExpression &&
-    this.leftOperand == other.leftOperand &&
-    this.rightOperand == other.rightOperand
+    super == other && ((BinaryExpression binex) => 
+      leftOperand == binex.leftOperand &&
+      rightOperand == binex.rightOperand
+    )(other as BinaryExpression)
   ;
   @override String toString() => "($leftOperand ${nodeTokens[runtimeType]} $rightOperand)";
 }
 class Equal extends BinaryExpression {
   Equal(super.position, super.leftOperand, super.rightOperand);
-  @override bool operator ==(Object other) => (super == other) && other is Equal;
 }
 class Unless extends BinaryExpression {
   Unless(super.position, super.leftOperand, super.rightOperand);
-  @override bool operator ==(Object other) => (super == other) && other is Unless;
 }
 
 abstract class OptionallyBinaryExpression extends Expression {
@@ -129,9 +145,10 @@ abstract class OptionallyBinaryExpression extends Expression {
   ;
 
   @override bool operator ==(Object other) => 
-    other is OptionallyBinaryExpression && 
-    this.leftOperand == other.leftOperand &&
-    this.rightOperand == other.rightOperand
+    super == other && ((OptionallyBinaryExpression opbinex) =>
+      this.leftOperand == opbinex.leftOperand &&
+      this.rightOperand == opbinex.rightOperand
+    )(other as OptionallyBinaryExpression)
   ;
   @override String toString() => 
     "(${leftOperand == null ? "" : "$leftOperand "}${nodeTokens[runtimeType]} ${rightOperand})"
@@ -139,19 +156,17 @@ abstract class OptionallyBinaryExpression extends Expression {
 }
 class Access extends OptionallyBinaryExpression {
   Access(super.position, super.x, [super.y]);
-  @override bool operator ==(Object other) => (super == other) && other is Access;
 }
 class Borrow extends OptionallyBinaryExpression {
   Borrow(super.position, super.x, [super.y]);
-  @override bool operator ==(Object other) => (super == other) && other is Borrow;
 }
 
 class Link extends Expression {
   List<Expression> children;
   Link(super.position, this.children);
   @override bool operator ==(Object other) => 
-    other is Link && 
-    compareLists(this.children, other.children)
+    super == other && 
+    compareLists(this.children, (other as Link).children)
   ;
   @override String toString() => "(${this.children.join(" K ")})";
 }
@@ -161,42 +176,42 @@ abstract class Statement extends Node {
   Statement(super.position);
 }
 
+class Place extends Statement {
+  Place(super.position);
+}
+
 abstract class UnaryStatement extends Statement {
   Expression child;
   UnaryStatement(super.position, this.child);
   @override bool operator ==(Object other) => 
-    other is UnaryStatement && this.child == other.child
+    super == other && child == (other as UnaryStatement).child
   ;
   @override String toString() => "${nodeTokens[runtimeType]!} ${child.toString()};";
 }
 class Jump extends UnaryStatement {
   Jump(super.position, super.child);
-  @override bool operator ==(Object other) => (super == other) && other is Jump;
 }
 class Throw extends UnaryStatement {
   Throw(super.position, super.child);
-  @override bool operator ==(Object other) => (super == other) && other is Throw;
-}
-class Write extends UnaryStatement {
-  Write(super.position, super.child);
-  @override bool operator ==(Object other) => (super == other) && other is Write;
 }
 class Yield extends UnaryStatement {
   Yield(super.position, super.child);
-  @override bool operator ==(Object other) => (super == other) && other is Yield;
 }
 
-class Gets extends Statement {
-  Access leftChild;
+abstract class BinaryStatement extends Statement {
+  Expression leftChild;
   Expression rightChild;
-  Gets(super.position, this.leftChild, this.rightChild);
+  BinaryStatement(super.position, this.leftChild, this.rightChild);
   @override bool operator ==(Object other) => 
-    other is Gets && 
-    this.leftChild == other.leftChild &&
-    this.rightChild == other.rightChild
+    super == other && ((Gets gets) =>
+      this.leftChild == gets.leftChild &&
+      this.rightChild == gets.rightChild
+    )(other as Gets)
   ;
-  @override
-  String toString() => '${leftChild.toString()} G ${rightChild.toString()};';
+  @override String toString() => "${leftChild.toString()} ${super.toString()} ${rightChild.toString()};";
+}
+class Gets extends BinaryStatement {
+  Gets(super.position, super.leftChild, super.rightChild);
 }
 
 abstract class Block extends Node {
@@ -204,25 +219,17 @@ abstract class Block extends Node {
   Block(super.position, this.children);
 
   @override bool operator ==(Object other) =>
-    other is Block &&
-    compareLists(this.children, other.children)
+    super == other &&
+    compareLists(this.children, (other as Block).children)
   ;
   @override String toString() => this.children.join(" ");
 }
 class Program extends Block {
   Program(super.position, super.children);
-  @override operator ==(Object other) => (super == other) && other is Program;
 }
 class Func extends Block implements Expression {
   Func(super.position, super.children);
-  @override operator ==(Object other) => (super == other) && other is Func;
   @override String toString() => "F ${super.toString()} E";
-}
-class Class extends Block implements Expression{
-  Borrow? borrow;
-  Class(super.position, super.children, [this.borrow]);
-  @override operator ==(Object other) => (super == other) && other is Class;
-  @override String toString() => "C${borrow == null ? "" : " $borrow T"} ${super.toString()} E";
 }
 
 class During extends Statement {
@@ -231,9 +238,10 @@ class During extends Statement {
   During(super.position, this.condition, this.children);
 
   @override bool operator ==(Object other) => 
-    other is During &&
-    this.condition == other.condition &&
-    compareLists(this.children, other.children)
+    super == other && ((During during) =>
+      condition == during.condition &&
+      compareLists(children, during.children)
+    )(other as During)
   ;
   @override String toString() => "D $condition T ${this.children.join(" ")} E";
 }
@@ -244,19 +252,12 @@ class If extends Statement {
   If(super.position, this.condition, this.children, [this.elseChildren]);
 
   @override bool operator ==(Object other) => 
-    other is If &&
-    this.condition == other.condition &&
-    compareLists(this.children, other.children) && 
-    (
-      (
-        this.elseChildren != null && 
-        other.elseChildren != null &&
-        compareLists(this.elseChildren!, other.elseChildren!)
-      ) || (
-        this.elseChildren == null &&
-        other.elseChildren == null
-      )
-    )
+    super == other && ((If ifStatement) =>
+      condition == ifStatement.condition &&
+      compareLists(children, ifStatement.children) && 
+      (elseChildren == null) == (ifStatement.elseChildren == null) &&
+      compareLists(elseChildren ?? [], ifStatement.elseChildren ?? [])
+    )(other as If)
   ;
   @override String toString() => 
     "I $condition T ${this.children.join(" ")} E"
@@ -267,16 +268,29 @@ class Expect extends Statement {
   List<Statement> tryChildren;
   List<Statement> catchChildren;
   Expect(super.position, this.tryChildren, this.catchChildren);
-
   @override bool operator ==(Object other) => 
-    other is Expect &&
-    compareLists(this.tryChildren, other.tryChildren) && 
-    compareLists(this.catchChildren, other.catchChildren)
+    super == other && ((Expect expect) =>
+      compareLists(tryChildren, expect.tryChildren) && 
+      compareLists(catchChildren, expect.catchChildren)
+    )(other as Expect)
   ;
-  @override String toString() => "X ${this.tryChildren.join(" ")} H ${catchChildren.join(" ")} E";
+  @override String toString() => "X ${tryChildren.join(" ")} H ${catchChildren.join(" ")} E";
+}
+class Await extends Statement {
+  List<Statement> asyncChildren;
+  List<Statement> callbackChildren;
+  Await(super.position, this.asyncChildren, this.callbackChildren);
+  @override bool operator ==(Object other) =>
+    super == other && ((Await awaitStatement) =>
+      compareLists(asyncChildren, awaitStatement.asyncChildren) &&
+      compareLists(callbackChildren, awaitStatement.callbackChildren)
+    )(other as Await)
+  ;
+  @override String toString() => "W ${asyncChildren.join(" ")} T ${callbackChildren.join(" ")} E";
 }
 
 class Error implements Expression, Statement {
+  // TODO consider deleting
   get position => this.position;
   set position(int position) {this.position = position;}
 }
