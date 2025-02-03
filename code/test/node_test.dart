@@ -9,28 +9,21 @@ void main() {
       Main m = Main(0);
       expect(m, Main(0));
       expect(m, isNot(Main(1)));
-      expect(m, isNot(Length(0)));
+      expect(m, isNot(Self(0)));
       expect(m.toString(), 'M');
-    });
-    test("Read", () {
-      Read r = Read(0);
-      expect(r, Read(0));
-      expect(r, isNot(Read(1)));
-      expect(r, isNot(Place(0)));
-      expect(r.toString(), 'R');
     });
     test("Self", () {
       Self s = Self(0);
       expect(s, Self(0));
       expect(s, isNot(Self(1)));
-      expect(s, isNot(Read(0)));
+      expect(s, isNot(Zilch(0)));
       expect(s.toString(), 'S');
     });
     test("Zilch", () {
       Zilch z = Zilch(0);
       expect(z, Zilch(0));
       expect(z, isNot(Zilch(1)));
-      expect(z, isNot(Self(0)));
+      expect(z, isNot(Number(0, value: 0)));
       expect(z.toString(), 'Z');
     });
     test("Number", () {
@@ -38,27 +31,35 @@ void main() {
       expect(one, Number(0, value: 1));
       expect(one, isNot(Number(0, value: 0)));
       expect(one, isNot(Number(1, value: 1)));
-      expect(one, isNot(Zilch(0)));
+      expect(one, isNot(Self(0)));
       expect(one.toString(), '1');
     });
   });
   group("UnaryExpression: ", () {
     test("Copy", () {
-      Copy c = Copy(0, Length(1));
-      expect(c, Copy(0, Length(1)));
-      expect(c, isNot(Copy(0, Length(0))));
-      expect(c, isNot(Copy(1, Length(1))));
-      expect(c, isNot(Copy(0, Number(1, value: 0))));
-      expect(c, isNot(Not(0, Length(0))));
-      expect(c.toString(), "(C L)");
+      Copy c = Copy(0, Main(1));
+      expect(c, Copy(0, Main(1)));
+      expect(c, isNot(Copy(2, Main(1))));
+      expect(c, isNot(Copy(0, Main(2))));
+      expect(c, isNot(Copy(0, Self(1))));
+      expect(c, isNot(Length(0, Main(0))));
+      expect(c.toString(), "(C M)");
     });
-    // TODO test length
+    test("Length", () {
+      Length l = Length(0, Self(1));
+      expect(l, Length(0, Self(1)));
+      expect(l, isNot(Length(2, Self(1))));
+      expect(l, isNot(Length(0, Self(2))));
+      expect(l, isNot(Length(0, Zilch(1))));
+      expect(l, isNot(Not(0, Self(1))));
+      expect(l.toString(), "(L S)");
+    });
     test("Not", () {
       Not n = Not(0, Zilch(1));
       expect(n, Not(0, Zilch(1)));
-      expect(n, isNot(Not(0, Zilch(0))));
-      expect(n, isNot(Not(1, Zilch(1))));
-      expect(n, isNot(Not(0, Self(1))));
+      expect(n, isNot(Not(0, Zilch(2))));
+      expect(n, isNot(Not(2, Zilch(1))));
+      expect(n, isNot(Not(0, Main(1))));
       expect(n, isNot(Invoke(0, Zilch(1))));
       expect(n.toString(), "(N Z)");
     });
@@ -67,42 +68,48 @@ void main() {
       expect(v, Invoke(0, Main(1)));
       expect(v, isNot(Invoke(0, Main(0))));
       expect(v, isNot(Invoke(1, Main(1))));
-      expect(v, isNot(Invoke(0, Read(1))));
+      expect(v, isNot(Invoke(0, Self(1))));
       expect(v, isNot(Copy(0, Main(1))));
       expect(v.toString(), "(V M)");
     });
     test("nested", () {
-      Expression e = Not(0, Invoke(1, Copy(2, Length(3))));
-      expect(e, Not(0, Invoke(1, Copy(2, Length(3)))));
-      expect(e, isNot(Copy(0, Invoke(1, Copy(2, Length(3))))));
-      expect(e, isNot(Not(0, Not(1, Copy(2, Length(3))))));
-      expect(e, isNot(Not(0, Invoke(1, Invoke(2, Length(3))))));
-      expect(e, isNot(Not(0, Invoke(1, Copy(2, Read(3))))));
-      expect(e.toString(), "(N (V (N L)))");
+      Expression e = Length(0, Copy(1, Not(2, Invoke(3, Zilch(4)))));
+      expect(e, Length(0, Copy(1, Not(2, Invoke(3, Zilch(4))))));
+      expect(e, isNot(Length(5, Copy(1, Not(2, Invoke(3, Zilch(4)))))));
+      expect(e, isNot(Length(0, Copy(5, Not(2, Invoke(3, Zilch(4)))))));
+      expect(e, isNot(Length(0, Copy(1, Not(5, Invoke(3, Zilch(4)))))));
+      expect(e, isNot(Length(0, Copy(1, Not(2, Invoke(5, Zilch(4)))))));
+      expect(e, isNot(Length(0, Copy(1, Not(2, Invoke(3, Zilch(5)))))));
+      expect(e, isNot(Not(0, Copy(1, Not(2, Invoke(3, Zilch(4)))))));
+      expect(e, isNot(Length(0, Invoke(1, Not(2, Invoke(3, Zilch(4)))))));
+      expect(e, isNot(Length(0, Copy(1, Length(2, Invoke(3, Zilch(4)))))));
+      expect(e, isNot(Length(0, Copy(1, Not(2, Copy(3, Zilch(4)))))));
+      expect(e, isNot(Length(0, Copy(1, Not(2, Invoke(3, Self(4)))))));
+      expect(e.toString(), "(L (C (N (V Z))))");
     });
   });
   group("BinaryExpression: ", () {
     test("eQual", () {
-      Equal q = Equal(1, Zilch(0), Read(2));
-      expect(q, Equal(1, Zilch(0), Read(2)));
-      expect(q, isNot(Equal(0, Zilch(0), Read(2))));
-      expect(q, isNot(Equal(1, Zilch(2), Read(2))));
-      expect(q, isNot(Equal(1, Zilch(0), Read(1))));
-      expect(q, isNot(Equal(1, Length(0), Read(2))));
+      Equal q = Equal(1, Zilch(0), Self(2));
+      expect(q, Equal(1, Zilch(0), Self(2)));
+      expect(q, isNot(Equal(3, Zilch(0), Self(2))));
+      expect(q, isNot(Equal(1, Zilch(3), Self(2))));
+      expect(q, isNot(Equal(1, Zilch(0), Self(3))));
+      expect(q, isNot(Equal(1, Main(0), Self(2))));
       expect(q, isNot(Equal(1, Zilch(0), Main(2))));
-      expect(q, isNot(Unless(1, Zilch(0), Read(2))));
-      expect(q.toString(), "(Z Q R)");
+      expect(q, isNot(Unless(1, Zilch(0), Self(2))));
+      expect(q.toString(), "(Z Q S)");
     });
     test("Unless", () {
-      Unless u = Unless(1, Self(0), Read(2));
-      expect(u, Unless(1, Self(0), Read(2)));
-      expect(u, isNot(Unless(0, Self(0), Read(2))));
-      expect(u, isNot(Unless(1, Self(2), Read(2))));
-      expect(u, isNot(Unless(1, Self(0), Read(1))));
-      expect(u, isNot(Unless(1, Length(0), Read(2))));
+      Unless u = Unless(1, Self(0), Zilch(2));
+      expect(u, Unless(1, Self(0), Zilch(2)));
+      expect(u, isNot(Unless(3, Self(0), Zilch(2))));
+      expect(u, isNot(Unless(1, Self(3), Zilch(2))));
+      expect(u, isNot(Unless(1, Self(0), Zilch(3))));
+      expect(u, isNot(Unless(1, Main(0), Zilch(2))));
       expect(u, isNot(Unless(1, Self(0), Main(2))));
-      expect(u, isNot(Equal(1, Self(0), Read(2))));
-      expect(u.toString(), "(S U R)");
+      expect(u, isNot(Equal(1, Self(0), Zilch(2))));
+      expect(u.toString(), "(S U Z)");
     });
     test("nested", () {
       Expression e = 

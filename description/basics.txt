@@ -52,7 +52,7 @@ jump/place
 tokens:
     Access
     Borrow (import)
-    Class (TODO replace with Copy)
+    Copy
     During (while)
     End
     Function
@@ -72,7 +72,7 @@ catcH
     Then
     Unless (XOR)
   inVoke (call)
-   aWait
+    Wait
    eXpect (exception)
     Yield (return)
     Zilch (null)
