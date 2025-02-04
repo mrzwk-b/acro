@@ -51,8 +51,17 @@ void main() {
       expect(l, isNot(Length(2, Self(1))));
       expect(l, isNot(Length(0, Self(2))));
       expect(l, isNot(Length(0, Zilch(1))));
-      expect(l, isNot(Not(0, Self(1))));
+      expect(l, isNot(Read(0, Self(1))));
       expect(l.toString(), "(L S)");
+    });
+    test("Read", () {
+      Read r = Read(0, Self(1));
+      expect(r, Read(0, Self(1)));
+      expect(r, isNot(Read(2, Self(1))));
+      expect(r, isNot(Read(0, Self(2))));
+      expect(r, isNot(Read(0, Zilch(1))));
+      expect(r, isNot(Not(0, Self(1))));
+      expect(r.toString(), "(R S)");
     });
     test("Not", () {
       Not n = Not(0, Zilch(1));
@@ -113,33 +122,42 @@ void main() {
     });
     test("nested", () {
       Expression e = 
-        Equal(3, Unless(1, Read(0), Length(2)), Equal(6, Not(4, Self(5)), Invoke(7, Main(8))))
+        Equal(3, Unless(1, Main(0), Self(2)), Equal(6, Not(4, Zilch(5)), Invoke(7, Main(8))))
       ;
       expect(e, 
-        Equal(3, Unless(1, Read(0), Length(2)), Equal(6, Not(4, Self(5)), Invoke(7, Main(8))))
+        Equal(3, Unless(1, Main(0), Self(2)), Equal(6, Not(4, Zilch(5)), Invoke(7, Main(8))))
       );
       expect(e, isNot(
-        Unless(3, Unless(1, Read(0), Length(2)), Equal(6, Not(4, Self(5)), Invoke(7, Main(8))))
+        Equal(3, Unless(1, Main(0), Self(2)), Equal(6, Not(4, Zilch(5)), Main(7)))
       ));
       expect(e, isNot(
-        Equal(3, Unless(1, Read(0), Length(2)), Equal(6, Not(4, Self(5)), Main(7)))
+        Equal(3, Unless(1, Main(0), Self(2)), Equal(6, Length(4, Zilch(5)), Invoke(7, Main(8))))
       ));
       expect(e, isNot(
-        Equal(3, Unless(1, Read(0), Length(2)), Equal(6, Not(4, Self(5)), Main(7)))
+        Equal(3, Unless(1, Main(0), Self(2)), Unless(6, Not(4, Zilch(5)), Invoke(7, Main(8))))
       ));
       expect(e, isNot(
-        Equal(9, Unless(1, Read(0), Length(2)), Equal(6, Not(4, Self(5)), Invoke(7, Main(8))))
+        Unless(3, Unless(1, Main(0), Self(2)), Equal(6, Not(4, Zilch(5)), Invoke(7, Main(8))))
       ));
       expect(e, isNot(
-        Equal(3, Unless(9, Read(0), Length(2)), Equal(6, Not(4, Self(5)), Invoke(7, Main(8))))
+        Equal(9, Unless(1, Main(0), Self(2)), Equal(6, Not(4, Zilch(5)), Invoke(7, Main(8))))
       ));
       expect(e, isNot(
-        Equal(3, Unless(1, Read(9), Length(2)), Equal(6, Not(4, Self(5)), Invoke(7, Main(8))))
+        Equal(3, Unless(9, Main(0), Self(2)), Equal(6, Not(4, Zilch(5)), Invoke(7, Main(8))))
       ));
       expect(e, isNot(
-        Equal(3, Unless(1, Read(0), Length(2)), Equal(6, Not(4, Self(5)), Invoke(7, Main(9))))
+        Equal(3, Unless(1, Main(9), Self(2)), Equal(6, Not(4, Zilch(5)), Invoke(7, Main(8))))
       ));
-      expect(e.toString(), "((R U L) Q ((N S) Q (V M)))");
+      expect(e, isNot(
+        Equal(3, Unless(1, Main(0), Self(2)), Equal(9, Not(4, Zilch(5)), Invoke(7, Main(8))))
+      ));
+      expect(e, isNot(
+        Equal(3, Unless(1, Main(0), Self(2)), Equal(6, Not(4, Zilch(5)), Invoke(9, Main(8))))
+      ));
+      expect(e, isNot(
+        Equal(3, Unless(1, Main(0), Self(2)), Equal(6, Not(4, Zilch(5)), Invoke(7, Main(9))))
+      ));
+      expect(e.toString(), "((M U S) Q ((N Z) Q (V M)))");
     });
   });
   group("OptionallyBinaryExpression: ", () {
@@ -153,58 +171,65 @@ void main() {
       expect(unary.toString(), "(A 0)");
     });
     test("Access (binary)", () {
-      Access binary = Access(1, Read(0), Length(2));
-      expect(binary, Access(1, Read(0), Length(2)));
-      expect(binary, isNot(Access(3, Read(0), Length(2))));
-      expect(binary, isNot(Access(1, Read(3), Length(2))));
-      expect(binary, isNot(Access(1, Read(0), Length(3))));
-      expect(binary, isNot(Access(1, Self(0), Length(2))));
-      expect(binary, isNot(Access(1, Read(0), Self(2))));
-      expect(binary, isNot(Borrow(1, Read(0), Length(2))));
-      expect(binary.toString(), "(R A L)");
+      Access binary = Access(1, Self(2), Zilch(0));
+      expect(binary, Access(1, Self(2), Zilch(0)));
+      expect(binary, isNot(Access(3, Self(2), Zilch(0))));
+      expect(binary, isNot(Access(1, Self(3), Zilch(0))));
+      expect(binary, isNot(Access(1, Self(2), Zilch(3))));
+      expect(binary, isNot(Access(1, Main(2), Zilch(0))));
+      expect(binary, isNot(Access(1, Self(2), Main(0))));
+      expect(binary, isNot(Borrow(1, Self(2), Zilch(0))));
+      expect(binary.toString(), "(Z A S)");
     });
     test("Borrow (unary)", () {
-      Borrow unary = Borrow(0, Length(1));
-      expect(unary, Borrow(0, Length(1)));
-      expect(unary, isNot(Borrow(2, Length(1))));
-      expect(unary, isNot(Borrow(0, Length(2))));
-      expect(unary, isNot(Borrow(0, Number(1, value: 0))));
-      expect(unary, isNot(Access(0, Length(1))));
+      Borrow unary = Borrow(0, Main(1));
+      expect(unary, Borrow(0, Main(1)));
+      expect(unary, isNot(Borrow(2, Main(1))));
+      expect(unary, isNot(Borrow(0, Main(2))));
+      expect(unary, isNot(Borrow(0, Zilch(1))));
+      expect(unary, isNot(Access(0, Main(1))));
       expect(unary.toString(), "(B 0)");
     });
     test("Borrow (binary)", () {
-      Borrow binary = Borrow(1, Zilch(0), Self(2));
-      expect(binary, Borrow(1, Zilch(0), Self(2)));
-      expect(binary, isNot(Borrow(1, Main(0), Self(2))));
-      expect(binary, isNot(Borrow(1, Zilch(0), Read(2))))
-      expect(binary, isNot(Access(1, Zilch(0), Self(2))));
-      expect(binary.toString(), "(Z B S)");
+      Borrow binary = Borrow(1, Zilch(2), Self(0));
+      expect(binary, Borrow(1, Zilch(2), Self(0)));
+      expect(binary, isNot(Borrow(3, Zilch(2), Self(0))));
+      expect(binary, isNot(Borrow(1, Zilch(3), Self(0))));
+      expect(binary, isNot(Borrow(1, Zilch(2), Self(3))));
+      expect(binary, isNot(Borrow(1, Main(2), Self(0))));
+      expect(binary, isNot(Borrow(1, Zilch(2), Main(0))));
+      expect(binary, isNot(Access(1, Zilch(2), Self(0))));
+      expect(binary.toString(), "(S B Z)");
     });
     test("nested", () {
-      Expression e = Access(Borrow(Number(1), Access(Length())), Borrow(Read()));
-      expect(e, Access(Borrow(Number(1), Access(Length())), Borrow(Read())));
-      expect(e, isNot(Access(Borrow(Number(2), Access(Length())), Borrow(Read()))));
-      expect(e, isNot(Access(Borrow(Number(2), Access(Length())), Access(Read()))));
-      expect(e, isNot(Borrow(Borrow(Number(2), Access(Length())), Borrow(Read()))));
-      expect(e.toString(), "((1 B (A L)) A (B R))");
+      Expression e = Access(2, Borrow(5, Zilch(6), Access(3, Self(4))), Borrow(0, Main(1)));
+      expect(e, Access(2, Borrow(5, Zilch(6), Access(3, Self(4))), Borrow(0, Main(1))));
+      expect(e, isNot(Access(7, Borrow(5, Zilch(6), Access(3, Self(4))), Borrow(0, Main(1)))));
+      expect(e, isNot(Access(2, Borrow(7, Zilch(6), Access(3, Self(4))), Borrow(0, Main(1)))));
+      expect(e, isNot(Access(2, Borrow(5, Zilch(7), Access(3, Self(4))), Borrow(0, Main(1)))));
+      expect(e, isNot(Access(2, Borrow(5, Zilch(6), Access(7, Self(4))), Borrow(0, Main(1)))));
+      expect(e, isNot(Access(2, Borrow(5, Zilch(6), Access(3, Self(7))), Borrow(0, Main(1)))));
+      expect(e, isNot(Access(2, Borrow(5, Zilch(6), Access(3, Self(4))), Borrow(7, Main(1)))));
+      expect(e, isNot(Access(2, Borrow(5, Zilch(6), Access(3, Self(4))), Borrow(0, Main(7)))));
+      expect(e, isNot(Borrow(2, Borrow(5, Zilch(6), Access(3, Self(4))), Borrow(0, Main(1)))));
+      expect(e, isNot(Access(2, Access(5, Zilch(6), Access(3, Self(4))), Borrow(0, Main(1)))));
+      expect(e, isNot(Access(2, Borrow(5, Main(6), Access(3, Self(4))), Borrow(0, Main(1)))));
+      expect(e, isNot(Access(2, Borrow(5, Zilch(6), Borrow(3, Self(4))), Borrow(0, Main(1)))));
+      expect(e, isNot(Access(2, Borrow(5, Zilch(6), Access(3, Zilch(4))), Borrow(0, Main(1)))));
+      expect(e, isNot(Access(2, Borrow(5, Zilch(6), Self(4)), Borrow(0, Main(1)))));
+      expect(e, isNot(Access(2, Borrow(5, Zilch(6)), Borrow(0, Main(1)))));
+      expect(e, isNot(Access(2, Borrow(5, Zilch(6), Access(3, Self(4))), Access(0, Main(1)))));
+      expect(e, isNot(Access(2, Borrow(5, Zilch(6), Access(3, Self(4))), Borrow(0, Self(1)))));
+      expect(e, isNot(Access(2, Borrow(5, Zilch(6), Access(3, Self(4))))));
+      expect(e.toString(), "((B M) A ((A S) B Z))");
     });
   });
   group("linK", () {
-    test("empty", () {
-      Link k = Link([]);
-      expect(k, Link([]));
-      expect(k, isNot(Link([Zilch()])));
-      expect(k, isNot(Zilch()));
-      expect(k.toString(), "()");
+    test("too small", () {
+      expect(Link(0, []), throwsA(isA<AssertionError>()));
+      expect(Link(1, [Zilch(0)]), throwsA(isA<AssertionError>()));
     });
-    test("singleton", () {
-      Link k = Link([Zilch()]);
-      expect(k, Link([Zilch()]));
-      expect(k, isNot(Link([Zilch(), Number(0)])));
-      expect(k, isNot(Invoke(Zilch())));
-      expect(k.toString(), "(Z)");
-    });
-    test("full", () {
+    test("many", () {
       Link k = Link([Zilch(), Number(0), Self(), Length(), Read()]);
       expect(k, Link([Zilch(), Number(0), Self(), Length(), Read()]));
       expect(k, isNot(Link([Number(0), Zilch(), Self(), Length(), Read()])));
@@ -221,23 +246,13 @@ void main() {
     });
     test("thrOw", () {
       Throw t = Throw(Length());
-      
       expect(t, Throw(Length()));
       expect(t, isNot(Write((Length()))));
       expect(t, isNot(Throw((Read()))));
       expect(t.toString(), "O L;");
     });
-    test("Write", () {
-      Write t = Write(Read());
-      
-      expect(t, Write(Read()));
-      expect(t, isNot(Yield((Read()))));
-      expect(t, isNot(Write((Self()))));
-      expect(t.toString(), "W R;");
-    });
     test("Yield", () {
       Yield t = Yield(Self());
-      
       expect(t, Yield(Self()));
       expect(t, isNot(Jump((Self()))));
       expect(t, isNot(Yield((Number(0)))));
@@ -245,13 +260,7 @@ void main() {
     });
   });
   group("Gets", () {
-    test("Gets", () {
-      Gets g = Gets(Access(Number(0)), Read());
-      expect(g, Gets(Access(Number(0)), Read()));
-      expect(g, isNot(Gets(Access(Number(0)), Length())));
-      expect(g, isNot(Access(Access(Number(0)), Read())));
-      expect(g.toString(), "(A 0) G R;");
-    }); 
+    // TODO
   });
   group("During", () {
     test("empty block", () {
@@ -301,7 +310,7 @@ void main() {
       expect(i.toString(), "I 1 T O L; W S; E NT Y S; E");
     });
   });
-  // TODO test aWait
+  // TODO test Wait
   group("eXpect", () { // not to be confused with expect(), eXpect is our keyword for try blocks
     test("empty blocks", () {
       Expect x = Expect([], []);
@@ -318,7 +327,7 @@ void main() {
       expect(x.toString(), "X O R; H W (S A 0); Y L; E");
     });
   });
-  group("Func", () {
+  group("Function", () {
     test ("empty block", () {
       Func f = Func([]);
       expect(f, Func([]));

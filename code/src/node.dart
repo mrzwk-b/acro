@@ -16,6 +16,8 @@ abstract class Node {
   /// 5: E
   /// 
   /// position 0 is reserved for the root [Program] node
+  /// 
+  /// [Link] nodes are defined by more than one token; the position is based on the last one
   int position;
   Node(this.position);
   @override bool operator ==(Object other) =>
@@ -47,7 +49,7 @@ Map<Type, String> nodeTokens = {
   // Then: 'T',
   Unless: 'U',
   Invoke: 'V',
-  Await: 'W',
+  Wait: 'W',
   Expect: 'X',
   Yield: 'Y',
   Zilch: 'Z',
@@ -139,11 +141,7 @@ class Unless extends BinaryExpression {
 abstract class OptionallyBinaryExpression extends Expression {
   Expression? leftOperand;
   Expression rightOperand;
-  OptionallyBinaryExpression(super.position, Expression x, [Expression? y]): 
-    leftOperand = y == null ? y : x,
-    rightOperand = y == null ? x : y
-  ;
-
+  OptionallyBinaryExpression(super.position, this.rightOperand, [this.leftOperand]);
   @override bool operator ==(Object other) => 
     super == other && ((OptionallyBinaryExpression opbinex) =>
       this.leftOperand == opbinex.leftOperand &&
@@ -163,12 +161,22 @@ class Borrow extends OptionallyBinaryExpression {
 
 class Link extends Expression {
   List<Expression> children;
-  Link(super.position, this.children);
+  Link(super.position, this.children): assert(children.length >= 2, "cannot link fewer than 2 items");
   @override bool operator ==(Object other) => 
     super == other && 
     compareLists(this.children, (other as Link).children)
   ;
   @override String toString() => "(${this.children.join(" K ")})";
+}
+
+class Func extends Expression {
+  List<Statement> children;
+  Func(super.position, this.children);
+  @override bool operator ==(Object other) =>
+    super == other &&
+    compareLists(this.children, (other as Func).children)
+  ;
+  @override String toString() => "F ${super.toString()} E";
 }
 
 // statements
@@ -212,24 +220,6 @@ abstract class BinaryStatement extends Statement {
 }
 class Gets extends BinaryStatement {
   Gets(super.position, super.leftChild, super.rightChild);
-}
-
-abstract class Block extends Node {
-  List<Statement> children;
-  Block(super.position, this.children);
-
-  @override bool operator ==(Object other) =>
-    super == other &&
-    compareLists(this.children, (other as Block).children)
-  ;
-  @override String toString() => this.children.join(" ");
-}
-class Program extends Block {
-  Program(super.position, super.children);
-}
-class Func extends Block implements Expression {
-  Func(super.position, super.children);
-  @override String toString() => "F ${super.toString()} E";
 }
 
 class During extends Statement {
@@ -276,21 +266,27 @@ class Expect extends Statement {
   ;
   @override String toString() => "X ${tryChildren.join(" ")} H ${catchChildren.join(" ")} E";
 }
-class Await extends Statement {
-  List<Statement> asyncChildren;
-  List<Statement> callbackChildren;
-  Await(super.position, this.asyncChildren, this.callbackChildren);
+class Wait extends Statement {
+  List<Statement> awaitedBlock;
+  List<Statement> callbackBlock;
+  Wait(super.position, this.awaitedBlock, this.callbackBlock);
   @override bool operator ==(Object other) =>
-    super == other && ((Await awaitStatement) =>
-      compareLists(asyncChildren, awaitStatement.asyncChildren) &&
-      compareLists(callbackChildren, awaitStatement.callbackChildren)
-    )(other as Await)
+    super == other && ((Wait wait) =>
+      compareLists(awaitedBlock, wait.awaitedBlock) &&
+      compareLists(callbackBlock, wait.callbackBlock)
+    )(other as Wait)
   ;
-  @override String toString() => "W ${asyncChildren.join(" ")} T ${callbackChildren.join(" ")} E";
+  @override String toString() => "W ${awaitedBlock.join(" ")} T ${callbackBlock.join(" ")} E";
 }
 
-class Error implements Expression, Statement {
-  // TODO consider deleting
-  get position => this.position;
-  set position(int position) {this.position = position;}
+// program
+class Program extends Node {
+  List<Statement> children;
+  Program(super.position, this.children);
+
+  @override bool operator ==(Object other) =>
+    super == other &&
+    compareLists(this.children, (other as Program).children)
+  ;
+  @override String toString() => this.children.join(" ");
 }
