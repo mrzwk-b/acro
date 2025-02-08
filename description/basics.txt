@@ -31,11 +31,13 @@ main/invoke/functions
         non-executable mains simply evaluate to the value stored in them
 
 self
-    "S" is a meaningful keyword in 2 contexts, inside a
+    "S" is a meaningful keyword in 3 contexts, inside a
+        defer statement then block
+            refers to the value returned by the asynchronous expression
         function
             refers to the object the function belongs to,
             whose lists holds arguments and whose main is the function itself (enabling recursion)
-        catch block
+        catch statement then block
             refers to the error being caught, which can in principle be any object
 
     if these constructs are nested, use "SAS" to go one level up
@@ -49,11 +51,16 @@ jump/place
         "J2 D1TPE P" skips the infinite loop
         "P J0 P" does nothing
 
+defer/wait
+    used for asynchronous programming
+    defer blocks evaluate their expression asynchronously and execute a callback on their completion
+    wait stalls the program until the value of an expression is not zilch, then results in that value
+
 tokens:
     Access
     Borrow (import)
     Copy
-    During (while)
+    Defer
     End
     Function
     Gets (assignment)
@@ -73,6 +80,6 @@ catcH
     Unless (XOR)
   inVoke (call)
     Wait
-   eXpect (exception)
+   eXamine (cast to int)
     Yield (return)
     Zilch (null)

@@ -8,12 +8,11 @@ document: [statement]*
         expression: (number, access, class, function, link, nullop, unop, binop) 
             number: [-] (0, 1, 2, 3, 4, 5, 6, 7, 8, 9)* 
             function: "F" [statement]* "E" 
-                statement: (during, gets, if, await, expect, "P", ("J", "O", "Y") expression) 
-                    during: "D" expression "T" [statement]* "E" 
+                statement: (gets, if, defer, expect, "P", ("J", "O", "Y") expression)
+                    defer: "D" expression "T" [statement]* "E"
                     if: "I" expression "T" [statement]* "E" ["NT" [statement]* "E"] 
-                    expect: "X" [statement]* "H [statement]* E" 
-                    await: "W" [statement]* "T" [statement]* "E"
+                    catch: "H" [statement]* "T" [statement]* E" 
             link: expression ["K" link]
-            nullop: ("M", "R", "S", "Z") 
-            unop: ("B", "C", "L", "N", "V") expression 
+            nullop: ("M", "S", "Z")
+            unop: ("B", "C", "L", "N", "R", "V", "W", "X") expression 
             binop: expression ("B", "Q", "U") expression 

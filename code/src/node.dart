@@ -1,28 +1,20 @@
 abstract class Node {
-  /// position of a node's token out of all tokens, starting at 1,
+  /// start of a node's starting token out of all tokens, starting at 1,
   /// regardless of if other tokens form their own nodes 
   /// or if they have length greater than 1
   /// 
-  /// for example, the code "D 10 T P E" contains the following tokens at the following positions:
-  /// 
-  /// 1: D
-  /// 
-  /// 2: 10
-  /// 
-  /// 3: T
-  /// 
-  /// 4: P
-  /// 
-  /// 5: E
-  /// 
-  /// position 0 is reserved for the root [Program] node
-  /// 
-  /// [Link] nodes are defined by more than one token; the position is based on the last one
-  int position;
-  Node(this.position);
+  /// start 0 is reserved for the root [Program] node
+  int start;
+  /// number of tokens that compose the node, i.e.,
+  /// [start] + [length] - 1 = start of final token of node
+  int length;
+  /// whether any of this node's descendants or the node itself are [Place]
+  bool hasPlaceDescendant;
+  Node(this.start, this.length, this.hasPlaceDescendant);
   @override bool operator ==(Object other) =>
     runtimeType == other.runtimeType &&
-    position == (other as Node).position
+    start == (other as Node).start &&
+    length == other.length
   ;
 }
 
@@ -30,11 +22,11 @@ Map<Type, String> nodeTokens = {
   Access: 'A',
   Borrow: 'B',
   Copy: 'C',
-  During: 'D',
+  Defer: 'D',
   // End: 'E',
   Func: 'F',
   Gets: 'G',
-  // Catch: 'H',
+  Catch: 'H',
   If: 'I',
   Jump: 'J',
   Link: 'K',
@@ -50,7 +42,7 @@ Map<Type, String> nodeTokens = {
   Unless: 'U',
   Invoke: 'V',
   Wait: 'W',
-  Expect: 'X',
+  Examine: 'X',
   Yield: 'Y',
   Zilch: 'Z',
 };
@@ -69,25 +61,25 @@ bool compareLists (List x, List y) {
 
 // expressions
 abstract class Expression extends Node {
-  Expression(super.position);
+  Expression(super.start, super.length, super.hasPlaceDescendant): assert(start != 0);
 }
 
 abstract class NullaryExpression extends Expression {
-  NullaryExpression(super.position);
+  NullaryExpression(int start) : super(start, 0, false);
   @override String toString() => nodeTokens[runtimeType]!;
 }
 class Main extends NullaryExpression {
-  Main(super.position);
+  Main(super.start);
 }
 class Self extends NullaryExpression {
-  Self(super.position);
+  Self(super.start);
 }
 class Zilch extends NullaryExpression {
-  Zilch(super.position);
+  Zilch(super.start);
 }
 class Number extends NullaryExpression {
   int value;
-  Number(super.position, {required this.value});
+  Number(super.start, {required this.value});
   @override String toString() => value.toString();
   @override bool operator ==(Object other) =>
     super == other && value == (other as Number).value
@@ -96,33 +88,41 @@ class Number extends NullaryExpression {
 
 abstract class UnaryExpression extends Expression {
   Expression child;
-  UnaryExpression(super.position, this.child);
+  UnaryExpression(int start, this.child): super(start, 1 + child.length, child.hasPlaceDescendant);
   @override String toString() => "(${nodeTokens[runtimeType]} $child)";
   @override bool operator ==(Object other) =>
     super == other && this.child == (other as UnaryExpression).child
   ;
 }
 class Copy extends UnaryExpression {
-  Copy(super.position, super.child);
+  Copy(super.start, super.child);
 }
 class Length extends UnaryExpression {
-  Length(super.position, super.child);
+  Length(super.start, super.child);
 }
 class Not extends UnaryExpression {
-  Not(super.position, super.child);
+  Not(super.start, super.child);
 }
 class Read extends UnaryExpression {
-  Read(super.position, super.child);
+  Read(super.start, super.child);
 }
 class Invoke extends UnaryExpression {
-  Invoke(super.position, super.child);
+  Invoke(super.start, super.child);
 }
+class Wait extends UnaryExpression {
+  Wait(super.start, super.child);
+}
+class Examine extends UnaryExpression {
+  Examine(super.start, super.child);
+} 
 
 abstract class BinaryExpression extends Expression {
   Expression leftOperand;
   Expression rightOperand;
-  BinaryExpression(super.position, this.leftOperand, this.rightOperand);
-
+  BinaryExpression(start, this.leftOperand, this.rightOperand): super(start,
+    leftOperand.length + 1 + rightOperand.length,
+    leftOperand.hasPlaceDescendant || rightOperand.hasPlaceDescendant
+  );
   @override bool operator ==(Object other) => 
     super == other && ((BinaryExpression binex) => 
       leftOperand == binex.leftOperand &&
@@ -132,16 +132,19 @@ abstract class BinaryExpression extends Expression {
   @override String toString() => "($leftOperand ${nodeTokens[runtimeType]} $rightOperand)";
 }
 class Equal extends BinaryExpression {
-  Equal(super.position, super.leftOperand, super.rightOperand);
+  Equal(super.start, super.leftOperand, super.rightOperand);
 }
 class Unless extends BinaryExpression {
-  Unless(super.position, super.leftOperand, super.rightOperand);
+  Unless(super.start, super.leftOperand, super.rightOperand);
 }
 
 abstract class OptionallyBinaryExpression extends Expression {
   Expression? leftOperand;
   Expression rightOperand;
-  OptionallyBinaryExpression(super.position, this.rightOperand, [this.leftOperand]);
+  OptionallyBinaryExpression(start, this.rightOperand, [this.leftOperand]): super(start,
+    (leftOperand?.length ?? 0) + 1 + rightOperand.length,
+    (leftOperand?.hasPlaceDescendant ?? false) || rightOperand.hasPlaceDescendant
+  );
   @override bool operator ==(Object other) => 
     super == other && ((OptionallyBinaryExpression opbinex) =>
       this.leftOperand == opbinex.leftOperand &&
@@ -153,15 +156,21 @@ abstract class OptionallyBinaryExpression extends Expression {
   ;
 }
 class Access extends OptionallyBinaryExpression {
-  Access(super.position, super.x, [super.y]);
+  Access(super.start, super.rightOperand, [super.leftOperand]);
 }
 class Borrow extends OptionallyBinaryExpression {
-  Borrow(super.position, super.x, [super.y]);
+  Borrow(super.start, super.rightOperand, [super.leftOperand]);
 }
 
 class Link extends Expression {
   List<Expression> children;
-  Link(super.position, this.children): assert(children.length >= 2, "cannot link fewer than 2 items");
+  Link(start, this.children):
+    assert(children.length >= 2, "cannot link fewer than 2 items"),
+    super(start,
+      children.map((child) => child.length).reduce((a, b) => a + 1 + b),
+      children.map((child) => child.hasPlaceDescendant).reduce((a, b) => a || b)
+    )
+  ;
   @override bool operator ==(Object other) => 
     super == other && 
     compareLists(this.children, (other as Link).children)
@@ -171,45 +180,56 @@ class Link extends Expression {
 
 class Func extends Expression {
   List<Statement> children;
-  Func(super.position, this.children);
+  Func(start, this.children): super(start,
+    children.map((child) => child.length).reduce((a, b) => a + b) + 2,
+    children.map((child) => child.hasPlaceDescendant).reduce((a, b) => a || b)
+  );
   @override bool operator ==(Object other) =>
     super == other &&
     compareLists(this.children, (other as Func).children)
   ;
-  @override String toString() => "F ${super.toString()} E";
+  @override String toString() => "F {${children.map((child) => child.toString()).join(" ")}} E";
 }
 
 // statements
 abstract class Statement extends Node {
-  Statement(super.position);
+  Statement(super.start, super.length, super.hasPlaceDescendant): assert(start != 0);
 }
 
-class Place extends Statement {
-  Place(super.position);
+abstract class NullaryStatement extends Statement {
+  NullaryStatement(start, hasPlaceDescendant): super(start, 1, hasPlaceDescendant);
+  @override String toString() => "${nodeTokens[runtimeType]};";
+}
+class Place extends NullaryStatement {
+  Place(start): super(start, true);
 }
 
 abstract class UnaryStatement extends Statement {
   Expression child;
-  UnaryStatement(super.position, this.child);
+  UnaryStatement(start, this.child):
+    super(start, 1 + child.length, false)
+  ;
   @override bool operator ==(Object other) => 
     super == other && child == (other as UnaryStatement).child
   ;
   @override String toString() => "${nodeTokens[runtimeType]!} ${child.toString()};";
 }
 class Jump extends UnaryStatement {
-  Jump(super.position, super.child);
+  Jump(super.start, super.child);
 }
 class Throw extends UnaryStatement {
-  Throw(super.position, super.child);
+  Throw(super.start, super.child);
 }
 class Yield extends UnaryStatement {
-  Yield(super.position, super.child);
+  Yield(super.start, super.child);
 }
 
 abstract class BinaryStatement extends Statement {
   Expression leftChild;
   Expression rightChild;
-  BinaryStatement(super.position, this.leftChild, this.rightChild);
+  BinaryStatement(start, this.leftChild, this.rightChild):
+    super(start, leftChild.length + 1 + rightChild.length, false)
+  ;
   @override bool operator ==(Object other) => 
     super == other && ((Gets gets) =>
       this.leftChild == gets.leftChild &&
@@ -219,71 +239,84 @@ abstract class BinaryStatement extends Statement {
   @override String toString() => "${leftChild.toString()} ${super.toString()} ${rightChild.toString()};";
 }
 class Gets extends BinaryStatement {
-  Gets(super.position, super.leftChild, super.rightChild);
+  Gets(super.start, super.leftChild, super.rightChild);
 }
 
-class During extends Statement {
+abstract class ConditionalStatement extends Statement {
   Expression condition;
   List<Statement> children;
-  During(super.position, this.condition, this.children);
-
+  ConditionalStatement(start, this.condition, this.children): super(start,
+    condition.length + children.map((child) => child.length).reduce((a, b) => a + b) + 3,
+    children.map((child) => child.hasPlaceDescendant).reduce((a, b) => a || b)
+  );
   @override bool operator ==(Object other) => 
-    super == other && ((During during) =>
+    super == other && ((ConditionalStatement during) =>
       condition == during.condition &&
       compareLists(children, during.children)
-    )(other as During)
+    )(other as ConditionalStatement)
   ;
-  @override String toString() => "D $condition T ${this.children.join(" ")} E";
+  @override String toString() =>
+    "${nodeTokens[runtimeType]} $condition T {${this.children.join(" ")}} E"
+  ;
 }
-class If extends Statement {
-  Expression condition;
-  List<Statement> children;
+class Defer extends ConditionalStatement {
+  Defer(start, awaitedBlock, callbackBlock): super(start, awaitedBlock, callbackBlock);
+}
+class If extends ConditionalStatement {
   List<Statement>? elseChildren;
-  If(super.position, this.condition, this.children, [this.elseChildren]);
-
+  If(start, condition, children, [this.elseChildren]): super(start, condition, children) {
+    if (elseChildren != null) 
+      length += elseChildren!.map((child) => child.length).reduce((a, b) => a + b) + 3
+    ;
+    hasPlaceDescendant |= 
+      elseChildren?.map((child) => child.hasPlaceDescendant).reduce((a, b) => a || b) ?? false
+    ;
+  }
   @override bool operator ==(Object other) => 
     super == other && ((If ifStatement) =>
-      condition == ifStatement.condition &&
-      compareLists(children, ifStatement.children) && 
       (elseChildren == null) == (ifStatement.elseChildren == null) &&
       compareLists(elseChildren ?? [], ifStatement.elseChildren ?? [])
     )(other as If)
   ;
   @override String toString() => 
-    "I $condition T ${this.children.join(" ")} E"
-    "${elseChildren == null ? '' : " NT ${elseChildren!.join(" ")} E"}"
+    "${super.toString()}"
+    "${elseChildren == null ? '' : " NT {${elseChildren!.join(" ")}} E"}"
   ;
 }
-class Expect extends Statement {
-  List<Statement> tryChildren;
-  List<Statement> catchChildren;
-  Expect(super.position, this.tryChildren, this.catchChildren);
+
+abstract class ReactiveStatement extends Statement {
+  List<Statement> action;
+  List<Statement> reaction;
+  ReactiveStatement(start, this.action, this.reaction): super(start,
+    (
+      action.map((child) => child.length).reduce((a, b) => a + b) +
+      reaction.map((child) => child.length).reduce((a, b) => a + b) + 3
+    ), (
+      action.map((child) => child.hasPlaceDescendant).reduce((a, b) => a || b) ||
+      reaction.map((child) => child.hasPlaceDescendant).reduce((a, b) => a || b)
+    )
+  );
   @override bool operator ==(Object other) => 
-    super == other && ((Expect expect) =>
-      compareLists(tryChildren, expect.tryChildren) && 
-      compareLists(catchChildren, expect.catchChildren)
-    )(other as Expect)
+    super == other && ((ReactiveStatement rs) =>
+      compareLists(action, rs.action) &&
+      compareLists(reaction, rs.reaction)
+    )(other as ReactiveStatement)
   ;
-  @override String toString() => "X ${tryChildren.join(" ")} H ${catchChildren.join(" ")} E";
+  @override String toString() =>
+    "${nodeTokens[runtimeType]} {${action.join(" ")}} T {${reaction.join(" ")}} E"
+  ;
 }
-class Wait extends Statement {
-  List<Statement> awaitedBlock;
-  List<Statement> callbackBlock;
-  Wait(super.position, this.awaitedBlock, this.callbackBlock);
-  @override bool operator ==(Object other) =>
-    super == other && ((Wait wait) =>
-      compareLists(awaitedBlock, wait.awaitedBlock) &&
-      compareLists(callbackBlock, wait.callbackBlock)
-    )(other as Wait)
-  ;
-  @override String toString() => "W ${awaitedBlock.join(" ")} T ${callbackBlock.join(" ")} E";
+class Catch extends ReactiveStatement {
+  Catch(start, tryBlock, catchBlock): super(start, tryBlock, catchBlock);
 }
 
 // program
 class Program extends Node {
   List<Statement> children;
-  Program(super.position, this.children);
-
+  Program(start, this.children): super(start,
+    children.map((child) => child.length).reduce((a, b) => a + b),
+    children.map((child) => child.hasPlaceDescendant).reduce((a, b) => a || b)
+  );
   @override bool operator ==(Object other) =>
     super == other &&
     compareLists(this.children, (other as Program).children)
